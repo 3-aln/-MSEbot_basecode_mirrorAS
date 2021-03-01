@@ -81,7 +81,7 @@ const int CR1_ciMotorRunTime = 1000;    // default time between inner case 0 act
 const long CR1_clDebounceDelay = 50;
 const long CR1_clReadTimeout = 220;
 
-const uint8_t ci8RightTurn = 18;
+const uint8_t ci8RightTurn = 21;  // Orig: 18
 const uint8_t ci8LeftTurn = 17;
 
 unsigned char CR1_ucMainTimerCaseCore1;
@@ -91,6 +91,7 @@ uint8_t CR1_ui8IRDatum;
 uint8_t CR1_ui8WheelSpeed;
 uint8_t CR1_ui8LeftWheelSpeed;
 uint8_t CR1_ui8RightWheelSpeed;
+uint8_t test_uint8_t = 100;    // test
 
 uint32_t CR1_u32Now;
 uint32_t CR1_u32Last;
@@ -182,6 +183,8 @@ void loop()
        ENC_ClearRightOdometer();    //
        btRun = !btRun;
         Serial.println(btRun);
+        Serial.println((test_uint8_t * 0.9512));
+        Serial.println((uint8_t)floor(test_uint8_t * 0.9512));
        // if stopping, reset motor states and stop motors
        if(!btRun)
        {
@@ -256,8 +259,10 @@ void loop()
             
             ENC_SetDistance(200, 200);
             ucMotorState = 1;   //forward
+//            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
             CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
-            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+//            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.99);
             ucMotorStateIndex = 2;
                      
             break;
@@ -379,7 +384,7 @@ void loop()
       //move bot X number of odometer ticks
       if(ENC_ISMotorRunning())    // from `Encoder.h`
       {
-        MoveTo(ucMotorState, CR1_ui8LeftWheelSpeed,CR1_ui8LeftWheelSpeed);
+        MoveTo(ucMotorState, CR1_ui8LeftWheelSpeed,CR1_ui8RightWheelSpeed);
       }
    
       CR1_ucMainTimerCaseCore1 = 4;
