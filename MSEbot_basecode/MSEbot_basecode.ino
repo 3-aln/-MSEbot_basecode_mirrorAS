@@ -49,8 +49,8 @@ const int ciLimitSwitch = 26;
 const int ciIRDetector = 16;
 const int ciMotorLeftA = 4;
 const int ciMotorLeftB = 18;
-const int ciMotorRightA = 19;
-const int ciMotorRightB = 12;
+const int ciMotorRightA = 12;   // 12
+const int ciMotorRightB = 19;   // 19
 const int ciEncoderLeftA = 17;
 const int ciEncoderLeftB = 5;
 const int ciEncoderRightA = 14;
@@ -66,7 +66,7 @@ volatile uint32_t vui32test2;
 
 #include <esp_task_wdt.h>
 
-#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h>  // Library used for Smart LEDS
 #include <Math.h>
 #include "Motion.h";
 #include "MyWEBserver.h"
@@ -77,7 +77,7 @@ void loopWEBServerButtonresponce(void);
 
 const int CR1_ciMainTimer =  1000;
 const int CR1_ciHeartbeatInterval = 500;
-const int CR1_ciMotorRunTime = 1000;
+const int CR1_ciMotorRunTime = 1000;    // default time between inner case 0 actions: 1000 (= 1 second)
 const long CR1_clDebounceDelay = 50;
 const long CR1_clReadTimeout = 220;
 
@@ -164,7 +164,7 @@ void loop()
   //WSVR_BreakPoint(1);
 
    //average the encoder tick times
-   ENC_Averaging();
+   ENC_Averaging();     // Fn from `Encoder.h` - used to determine speed.
 
   int iButtonValue = digitalRead(ciPB1);       // read value of push button 1
   if (iButtonValue != iLastButtonState) {      // if value has changed
@@ -178,8 +178,8 @@ void loop()
      // only toggle the run condition if the new button state is LOW
      if (iButtonState == LOW)
      {
-       ENC_ClearLeftOdometer();
-       ENC_ClearRightOdometer();
+       ENC_ClearLeftOdometer();     // Clear odometers every time the robot is started and stopped (button push)
+       ENC_ClearRightOdometer();    //
        btRun = !btRun;
         Serial.println(btRun);
        // if stopping, reset motor states and stop motors
@@ -195,6 +195,7 @@ void loop()
  }
  iLastButtonState = iButtonValue;             // store button state
 
+  // @@ LIMIT SWITCH
  if(!digitalRead(ciLimitSwitch))
  {
   btRun = 0; //if limit switch is pressed stop bot
@@ -202,7 +203,9 @@ void loop()
   ucMotorState = 0;
   move(0);
  }
- 
+
+
+ // @@ READING THE BEACON CHARACTERS
  if (Serial2.available() > 0) {               // check for incoming data
     CR1_ui8IRDatum = Serial2.read();          // read the incoming byte
 // Serial.println(iIncomingByte, HEX);        // uncomment to output received character
@@ -215,10 +218,13 @@ void loop()
       CR1_ui8IRDatum = 0;                     // if so, clear incoming byte
     }
  }
+
+
+ // @@ MAIN TIMER
  CR1_ulMainTimerNow = micros();
- if(CR1_ulMainTimerNow - CR1_ulMainTimerPrevious >= CR1_ciMainTimer)
+ if(CR1_ulMainTimerNow - CR1_ulMainTimerPrevious >= CR1_ciMainTimer)  // go through loop every 1 ms
  {
-   WDT_ResetCore1(); 
+   WDT_ResetCore1();    // reset watchdog timer - don't really need to worry about this.
    WDT_ucCaseIndexCore0 = CR0_ucMainTimerCaseCore0;
    
    CR1_ulMainTimerPrevious = CR1_ulMainTimerNow;
@@ -226,6 +232,7 @@ void loop()
    switch(CR1_ucMainTimerCaseCore1)  //full switch run through is 1mS
    {
     //###############################################################################
+    // @@ MAIN MOTOR RUN CODE
     case 0: 
     {
       
@@ -370,7 +377,7 @@ void loop()
     case 3: 
     {
       //move bot X number of odometer ticks
-      if(ENC_ISMotorRunning())
+      if(ENC_ISMotorRunning())    // from `Encoder.h`
       {
         MoveTo(ucMotorState, CR1_ui8LeftWheelSpeed,CR1_ui8LeftWheelSpeed);
       }
@@ -404,6 +411,7 @@ void loop()
     //###############################################################################
     case 7: 
     {
+      // @@ SET SMART LED COLOURS
        if (CR1_ui8IRDatum == 0x55) {                // if proper character is seen
          SmartLEDs.setPixelColor(0,0,25,0);         // make LED1 green with 10% intensity
        }
