@@ -75,14 +75,17 @@ volatile uint32_t vui32test2;
 
 void loopWEBServerButtonresponce(void);
 
-const int CR1_ciMainTimer =  1000;
+const int CR1_ciMainTimer =  1000;    // microseconds
 const int CR1_ciHeartbeatInterval = 500;
 const int CR1_ciMotorRunTime = 1000;    // default time between inner case 0 actions: 1000 (= 1 second)
+const int CR1_ciMotorRunTime_short = 200; // short pause
 const long CR1_clDebounceDelay = 50;
 const long CR1_clReadTimeout = 220;
 
 const uint8_t ci8RightTurn = 21;  // Orig: 18
 const uint8_t ci8LeftTurn = 17;
+
+const uint8_t ci8_180Turn = 44;
 
 unsigned char CR1_ucMainTimerCaseCore1;
 uint8_t CR1_ui8LimitSwitch;
@@ -102,7 +105,8 @@ unsigned long CR1_ulLastDebounceTime;
 unsigned long CR1_ulLastByteTime;
 
 unsigned long CR1_ulMainTimerPrevious;
-unsigned long CR1_ulMainTimerNow;
+unsigned long CR1_ulMainTimerNow;       // microseconds
+unsigned long CR1_ulMainTimerNow_millis;       // milliseconds
 
 unsigned long CR1_ulMotorTimerPrevious;
 unsigned long CR1_ulMotorTimerNow;
@@ -117,7 +121,18 @@ boolean btToggle = true;
 int iButtonState;
 int iLastButtonState = HIGH;
 
-boolean triggerMovement = true;
+boolean triggerMvt = true;
+
+// Set up servo motor
+const int servoPin = 15;
+const int servoChannel = 7;
+int servoPos[] = {0, 90, 90, 180, 0, 180, 0, 180, 90, 90, 0};
+int servo_index = 0;
+int servo_wait = 500;
+boolean servo_active = false;
+unsigned long servo_time_prev;
+
+
 
 // Declare our SK6812 SMART LED object:
 Adafruit_NeoPixel SmartLEDs(2, 25, NEO_GRB + NEO_KHZ400);
@@ -160,6 +175,10 @@ void setup() {
    SmartLEDs.begin();                          // Initialize Smart LEDs object (required)
    SmartLEDs.clear();                          // Set all pixel colours to off
    SmartLEDs.show();                           // Send the updated pixel colours to the hardware
+
+    // Set up servo
+    ledcAttachPin(servoPin, servoChannel);
+    ledcSetup(servoChannel, 50, 16);
 }
 
 void loop()
@@ -190,13 +209,13 @@ void loop()
        // if stopping, reset motor states and stop motors
        if(!btRun)
        {
-          ucMotorStateIndex = 0; 
+          ucMotorStateIndex = 0;
           ucMotorState = 0;
           move(0);
        }
 
-        if (!triggerMovement) {
-          triggerMovement = true;
+        if (!triggerMvt) {
+          triggerMvt = true;
         }
      }
    }
@@ -230,6 +249,7 @@ void loop()
 
  // @@ MAIN TIMER
  CR1_ulMainTimerNow = micros();
+ CR1_ulMainTimerNow_millis = millis();
  if(CR1_ulMainTimerNow - CR1_ulMainTimerPrevious >= CR1_ciMainTimer)  // go through loop every 1 ms
  {
 //    Serial.println(CR1_ui8WheelSpeed);
@@ -251,24 +271,27 @@ void loop()
        CR1_ulMotorTimerNow = millis();
 
       switch(ucMotorStateIndex) {
+        // MOVE FORWARD
         case 0: {
-          if (triggerMovement) {
-            ENC_SetDistance(200, 200);
+          if (triggerMvt) {
+            ENC_SetDistance(848, 848);  // 837 + 11
             ucMotorState = 1;   //forward
   //            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
             CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
   //            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
-            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.99);
-            triggerMovement = false;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.980);
+            triggerMvt = false;
           }
 
           if (!ENC_ISMotorRunning()) {
             CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
             ucMotorStateIndex = 1;  
-            triggerMovement = true;
+            triggerMvt = true;
           }
           break;
         }
+
+        // PAUSE
         case 1: {
           ucMotorStateIndex = 1;
           ucMotorState = 0;
@@ -279,13 +302,14 @@ void loop()
           }
           break;
         }
+        // REVERSE HALFWAY
         case 2: {
-          if (triggerMovement) {
+          if (triggerMvt) {
             ucMotorState = 4;  //reverse
-            ENC_SetDistance(-200, -200);
+            ENC_SetDistance(-424, -424);
             CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
-            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
-            triggerMovement = false;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.965);
+            triggerMvt = false;
           }
 
           if (!ENC_ISMotorRunning()) {
@@ -294,13 +318,44 @@ void loop()
           }
           break;
         }
+        // PAUSE
         case 3: {
           ucMotorState = 0;
           move(0);
           if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime) {   // stay still for 1 s
             CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
-            ucMotorStateIndex = 0;
-            triggerMovement = true;
+            ucMotorStateIndex = 4;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // 180 DEGREE TURN
+        case 4: {
+          if (triggerMvt) {
+            ENC_SetDistance(ci8_180Turn,-(ci8_180Turn));
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            ucMotorState = 3;  //
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex =  5;
+          }
+          
+          break;
+        }
+        // PAUSE BEFORE FLAG
+        case 5: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= 250) {   // stay still for 0.25 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex = 12;
+            triggerMvt = false;
+            servo_active = true;
+            servo_index = 0;
           }
           break;
         }
@@ -457,6 +512,17 @@ void loop()
     //###############################################################################
     case 4:   
     {
+      if (servo_active) {
+        if (CR1_ulMainTimerNow_millis - servo_time_prev >= servo_wait) {
+          servo_time_prev = CR1_ulMainTimerNow_millis;
+
+          ledcWrite(servoChannel, degreesToDutyCycle(servoPos[servo_index]));
+          servo_index++;
+        }
+        if (servo_index > 10) {
+          servo_active = false;
+        }
+      }
     
       CR1_ucMainTimerCaseCore1 = 5;
       break;
@@ -523,4 +589,13 @@ void loop()
    // Serial.println((vui32test2 - vui32test1)* 3 );
  }
 
+}
+
+long degreesToDutyCycle(int deg) {
+  const long minDutyCycle = 1675;
+  const long maxDutyCycle = 8050;
+
+  long dutyCycle = map(deg, 0, 180, minDutyCycle, maxDutyCycle);
+
+  return dutyCycle;
 }
