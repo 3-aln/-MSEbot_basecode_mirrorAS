@@ -78,12 +78,12 @@ void loopWEBServerButtonresponce(void);
 const int CR1_ciMainTimer =  1000;    // microseconds
 const int CR1_ciHeartbeatInterval = 500;
 const int CR1_ciMotorRunTime = 1000;    // default time between inner case 0 actions: 1000 (= 1 second)
-const int CR1_ciMotorRunTime_short = 200; // short pause
+const int CR1_ciMotorRunTime_short = 1000; // short pause
 const long CR1_clDebounceDelay = 50;
 const long CR1_clReadTimeout = 220;
 
-const uint8_t ci8RightTurn = 21;  // Orig: 18
-const uint8_t ci8LeftTurn = 17;
+const uint8_t ci8RightTurn = 22;  // Orig: 18
+const uint8_t ci8LeftTurn = 12;
 
 const uint8_t ci8_180Turn = 44;
 
@@ -263,7 +263,9 @@ void loop()
    {
     //###############################################################################
     // @@ MAIN MOTOR RUN CODE
-    case 0: 
+    // Enter `case 0` to indicate the desired task to perform.
+    
+    case -1:   // LEVEL 1 TASK -------------------------------------------------------
     {
       
       if(btRun)
@@ -473,6 +475,345 @@ void loop()
 //          }
 //         }
 //        }
+      }
+      CR1_ucMainTimerCaseCore1 = 1;
+      
+      break;
+    }
+
+    case 0:   // LEVEL 2 TASK -------------------------------------------------------
+    {
+      
+      if(btRun)
+      {
+       CR1_ulMotorTimerNow = millis();
+
+      switch(ucMotorStateIndex) {
+        // FIRST PAUSE
+        case 0: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+          }
+          break;
+        }
+        // MOVE FORWARD
+        case 1: {
+          if (triggerMvt) {
+            ENC_SetDistance(220, 220);
+            ucMotorState = 1;   //forward
+  //            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+  //            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.980);
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+
+        // PAUSE
+        case 2: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // TURN RIGHT
+        case 3: {
+          if (triggerMvt) {
+            ucMotorState = 3;  // right
+            ENC_SetDistance(ci8RightTurn - 4,-(ci8RightTurn - 4));
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+          }
+          break;
+        }
+        // PAUSE
+        case 4: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // MOVE FORWARD
+        case 5: {
+          if (triggerMvt) {
+            ENC_SetDistance(165, 165);
+            ucMotorState = 1;   //forward
+  //            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+  //            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.980);
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+
+        // PAUSE
+        case 6: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // TURN LEFT
+        case 7: {
+          if (triggerMvt) {
+            ENC_SetDistance(-(ci8LeftTurn + 5), ci8LeftTurn + 5);
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            ucMotorState = 2;  // left
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+          }
+          
+          break;
+        }
+        // PAUSE
+        case 8: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // MOVE FORWARD
+        case 9: {
+          if (triggerMvt) {
+            ENC_SetDistance(175, 175);
+            ucMotorState = 1;   //forward
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.980);
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // PAUSE
+        case 10: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // TURN LEFT
+        case 11: {
+          if (triggerMvt) {
+            ENC_SetDistance(-(ci8LeftTurn + 3), ci8LeftTurn + 3);
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            ucMotorState = 2;  // left
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+          }
+          
+          break;
+        }
+        // PAUSE
+        case 12: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // MOVE FORWARD
+        case 13: {
+          if (triggerMvt) {
+            ENC_SetDistance(165, 165);
+            ucMotorState = 1;   //forward
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.980);
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // PAUSE
+        case 14: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // TURN RIGHT
+        case 15: {
+          if (triggerMvt) {
+            ucMotorState = 3;  // right
+            ENC_SetDistance(ci8RightTurn - 3,-(ci8RightTurn - 3));
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+          }
+          break;
+        }
+        // PAUSE
+        case 16: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // MOVE FORWARD
+        case 17: {
+          if (triggerMvt) {
+            ENC_SetDistance(275, 275);
+            ucMotorState = 1;   //forward
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.980);
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // PAUSE
+        case 18: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime_short) {   // stay still for 0.5 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // REVERSE HALFWAY
+        case 19: {
+          if (triggerMvt) {
+            ucMotorState = 4;  //reverse
+            ENC_SetDistance(-350, -350);
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = (uint8_t)floor(CR1_ui8WheelSpeed * 0.965);
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+          }
+          break;
+        }
+        // PAUSE
+        case 20: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= CR1_ciMotorRunTime) {   // stay still for 1 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex++;
+            triggerMvt = true;
+          }
+          break;
+        }
+        // 180 DEGREE TURN
+        case 21: {
+          if (triggerMvt) {
+            ENC_SetDistance(ci8_180Turn,-(ci8_180Turn));
+            CR1_ui8LeftWheelSpeed = CR1_ui8WheelSpeed;
+            CR1_ui8RightWheelSpeed = CR1_ui8WheelSpeed;
+            ucMotorState = 3;  //
+            triggerMvt = false;
+          }
+
+          if (!ENC_ISMotorRunning()) {
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow; // update previous motor timer for the next case.
+            ucMotorStateIndex++;
+          }
+          
+          break;
+        }
+        // PAUSE BEFORE FLAG
+        case 22: {
+          ucMotorState = 0;
+          move(0);
+          if (CR1_ulMotorTimerNow - CR1_ulMotorTimerPrevious >= 250) {   // stay still for 0.25 s
+            CR1_ulMotorTimerPrevious = CR1_ulMotorTimerNow;
+            ucMotorStateIndex = 99;
+            triggerMvt = false;
+            servo_active = true;
+            servo_index = 0;
+          }
+          break;
+        }
+        
+      }
       }
       CR1_ucMainTimerCaseCore1 = 1;
       
