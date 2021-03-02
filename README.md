@@ -1,25 +1,43 @@
-## MSEbot-basecode
+# Allen Sun - MSE 2202A Lab 5 Submission
 
-Main bot code is found in MSEbot-basecode folder  
-Original code written by Eugen Porter with additions from Michael Naish
+## Links to Lab 5 Demo Videos
+Level 1: https://photos.app.goo.gl/gPdGXYfkVTumBiEfA
 
-This code requires the following libraries to be installed:
+Level 2: https://photos.app.goo.gl/7RJGssCpzx5FDSe88
 
-### arduinoWebSockets
+## Remarks
 
-May be installed directly from the Arduino Library Manager  
-Github project page: https://github.com/Links2004/arduinoWebSockets 
+*Note*: this repository was duplicated from the original repo, **MSEbot_basecode**. The changes to the file `MSEbot_basecode.ino` were pushed while programming.
 
-### ESPAsyncWebServer
+For this lab exercise, I was able to successfully complete the Level 1 task. I was unable to fully satisfy the requirements of the Level 2 task, and did not have sufficient time to work on Level 3.
 
-Not found in Arduino Library Manager  
-Github project page: https://github.com/me-no-dev/ESPAsyncWebServer  
-May be downloaded as a .ZIP file and installed from Arduino (Sketch > Include Library > Add .ZIP library)  
-Alternatively, it can be cloned into your Arduino/libraries folder
+### Code and troubleshooting
+My approach to the tasks involved estimating the number of encoder ticks to travel a measured distance. The parameters passed into `ENC_SetDistance()` required careful tuning to result in the desired distance travelled. As well, I attempted to straighten the robot's path by decreasing the right wheel speed (`CR1_ui8RightWheelSpeed`) relative to the left wheel speed. This somewhat worked, however the robot's path still varied from run to run. 90 degree turns were calibrated by adjusting encoder tick values to be sent into `ENC_SetDistance()`.
 
-### AsyncTCP
+### Next steps
+- Experiment with the acceleration parameters in `Encoder.h` to achieve straighter and more consistent motion.
+- Experiment with using the beacon to focus the robot towards the target destination -- see pseudocode below.
 
-Required by ESPAsyncWebServer. Not found in Arduino Library Manager  
-Github project page: https://github.com/me-no-dev/AsyncTCP  
-May be downloaded as a .ZIP file and installed from Arduino (Sketch > Include Library > Add .ZIP library)  
-Alternatively, it can be cloned into your Arduino/libraries folder
+### Pseudocode for beacon localization in Level 2
+```
+main timer loop {
+  switch (CR1_ucMainTimerCaseCore1) {
+    switch (ucMotorStateIndex) {
+      case located after the robot passes the obstacle:
+      {
+        if CR1_ui8IRDatam = letter U {
+          // Move to the next case, since the bot is oriented towards the target
+        }
+        
+        // With the help of timing variables, spin the robot around 30 degrees left and 
+        // 30 degrees right (relative to original orientation). Spin in roughly 5 degree 
+        // increments during each loop through the main timer. Stop spinning as soon as
+        // the letter U byte is detected by the IR sensor, and continue to the next case 
+        // as nornal.
+        
+        break;
+      }
+    }
+  }
+}
+```
