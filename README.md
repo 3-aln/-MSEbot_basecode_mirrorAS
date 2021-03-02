@@ -15,7 +15,7 @@ For this lab exercise, I was able to successfully complete the Level 1 task. I w
 My approach to the tasks involved estimating the number of encoder ticks to travel a measured distance. The parameters passed into `ENC_SetDistance()` required careful tuning to result in the desired distance travelled. As well, I attempted to straighten the robot's path by decreasing the right wheel speed (`CR1_ui8RightWheelSpeed`) relative to the left wheel speed. This somewhat worked, however the robot's path still varied from run to run. 90 degree turns were calibrated by adjusting encoder tick values to be sent into `ENC_SetDistance()`.
 
 ### Next steps
-- Experiment with the acceleration parameters in `Encoder.h` to achieve straighter and more consistent motion.
+- Experiment with the acceleration parameters in `Encoder.h` and `Motion.h` to achieve straighter and more consistent motion.
 - Experiment with using the beacon to focus the robot towards the target destination -- see pseudocode below.
 
 ### Pseudocode for beacon localization in Level 2
